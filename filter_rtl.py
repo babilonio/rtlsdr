@@ -1,6 +1,7 @@
 from __future__ import print_function
 from pylab import *
 from rtlsdr import *
+import sys
 
 import time
 
@@ -85,15 +86,16 @@ print("discriminator time: ", end - start)
 # show()
 
 # Find a decimation rate to achieve audio sampling rate between 44-48 kHz
-# audio_freq = 44100.0
-# dec_audio = int(f_cut/audio_freq)
-# Fs_audio = f_cut / dec_audio
-#
-# x7 = decimate(v, dec_audio)
-#
-# # Scale audio to adjust volume
-# x7 *= 10000 / np.max(np.abs(x7))
-# # Save to file as 16-bit signed single-channel audio samples
-# x7.astype("int16").tofile("ser-mono.raw")
+audio_freq = 48000.0
+dec_audio = int(f_cut/audio_freq)
+Fs_audio = f_cut / dec_audio
 
-# print(Fs_audio)
+x7 = decimate(v, dec_audio)
+
+# Scale audio to adjust volume
+x7 *= 10000 / np.max(np.abs(x7))
+# Save to file as 16-bit signed single-channel audio samples
+x7.astype("int16").tofile(sys.stdout)
+
+
+print(Fs_audio)
