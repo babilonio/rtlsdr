@@ -20,7 +20,7 @@ def conj( c):
 sdr = RtlSdr()
 
 Fs = int(1000000)
-fc = 100.4e6
+fc = 99.8e6
 F_offset = 250000         # Offset to capture at
 # configure device
 sdr.sample_rate = Fs # Hz
@@ -90,20 +90,56 @@ print("discriminator time: ", end - start)
 # dec = decimate(v, 10)
 # r = resample(dec, int(len(dec)/48e3) )
 
+# plt.figure(1)
+# plt.subplot(211)
+#
+# # use matplotlib to estimate and plot the PSD
+# psd(v, NFFT=1024, Fs=f_cut)
+# xlabel('Frequency (MHz)')
+# ylabel('Relative power (dB)')
+#
+# # show()
+#
+# # plt.subplot(212)
+# # plt.scatter(decimated.real, decimated.imag, alpha=0.05)
+#
+# show()
+
+# DEEMPH
+start = time.time()
+nFs = (Fs / downsample_rate);
+#tau
+tau = 75e-6 * nFs;
+#decay
+d = exp(-1/tau)
+# y[n] = (1 - d)*x[n] + d*y[n-1]
+b = [1 - d]
+a = [1, -d]
+deemphasized = lfilter(b,a,v)
+end = time.time()
+print("deemphasis time: ", end - start)
+
+# PILOT
+start = time.time()
+pilotf = 19e3 / (nFs/2);
+#tau
+pilotf_sub = 18e3 / (nFs/2);
+pilotf_sup = 20e3 / (nFs/2);
+
+bp = firwin(64,  [pilotf_sub, pilotf_sup], pass_zero=False);
+print(bp)
+pilot = np_convolve(bp, v)
+end = time.time()
+print("pilot filter time: ", end - start)
+
 plt.figure(1)
 plt.subplot(211)
-
 # use matplotlib to estimate and plot the PSD
-psd(v, NFFT=1024, Fs=f_cut)
+psd(pilot, NFFT=1024, Fs=f_cut)
 xlabel('Frequency (MHz)')
 ylabel('Relative power (dB)')
 
-# show()
-
-# plt.subplot(212)
-# plt.scatter(decimated.real, decimated.imag, alpha=0.05)
-
-show()
+show();
 
 # Find a decimation rate to achieve audio sampling rate between 44-48 kHz
 audio_freq = 48000.0
@@ -112,7 +148,7 @@ Fs_audio = f_cut / dec_audio
 
 print(Fs_audio)
 
-x7 = decimate(v, dec_audio)
+x7 = decimate(deemphasized, dec_audio)
 
 # Scale audio to adjust volume
 x7 *= 10000 / np.max(np.abs(x7))

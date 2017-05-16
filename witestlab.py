@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 sdr = RtlSdr()
 
-F_station = int(96.3e6)   #
+F_station = int(100.4e6)   #
 F_offset = 250000         # Offset to capture at
 # We capture at an offset to avoid DC spike
 Fc = F_station - F_offset # Capture center frequency
