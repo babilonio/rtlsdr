@@ -24,22 +24,26 @@ subplot_counter = 210
 def conj( c):
 	con = c.real - 1j*c.imag;
 	return con
-def plot_psd( signal):
 
+def plot_psd( signal, f):
+    global subplot_counter
     plt.figure(1)
     subplot_counter +=1
     plt.subplot(subplot_counter)
 
     # use matplotlib to estimate and plot the PSD
-    psd(v, NFFT=1024, Fs=F_bw)
+    psd(signal, NFFT=1024, Fs=f)
     xlabel('Frequency (MHz)')
     ylabel('Relative power (dB)')
+    return
 
 def plot_constelation( signal):
+    global subplot_counter
     plt.figure(1)
     subplot_counter +=1
     plt.subplot(subplot_counter)
     plt.scatter(signal.real, signal.imag, alpha=0.05)
+    return
 
 Fs = int(1102500) # This is for getting 44.1KHz as audio rate later
 N = int(8192000)  # must be integer, would need to be checked for remainder (N += 1 if necessary)
@@ -73,11 +77,12 @@ print("Reading time: ", end - start)
 carrier_freq1 = np.exp(-1.0j*2.0*np.pi* F_offset/Fs*np.arange(len(samples)))
 # Now, just multiply x1 and the digital complex expontential
 samples2 = samples * carrier_freq1
-
+plot_psd(samples2, Fs)
 #DOWNSAMPLE AND CHANNEL SELECTION FILTER
 start = time.time()
 b = firwin(10,  F_bw/Fs)
 downsample_rate = int(Fs / F_bw)
+Fs_downed = (Fs / downsample_rate);
 filtered = np_convolve(b, samples2)
 decimated = filtered[0::downsample_rate]
 end = time.time()
@@ -94,9 +99,9 @@ for i, s in enumerate(decimated):
     prev_s = s
 end = time.time()
 print("DEMODULATION time: ", end - start)
+plot_psd(v, Fs_downed)
 
 
-Fs_downed = (Fs / downsample_rate);
 
 # MONO CHANNEL
 monof = 15e3 / (Fs_downed/2);
