@@ -58,7 +58,7 @@ F_bw = 200e3 # FM Signal bandwidth
 #FILTERS
 start = time.time()
 
-b = firwin(10,  F_bw/Fs)
+bd = firwin(10,  F_bw/Fs)
 downsample_rate = int(Fs / F_bw)
 Fs_downed = (Fs / downsample_rate);
 
@@ -92,7 +92,7 @@ args = parser.parse_args()
 
 carrier_freq = args.freq
 plotting = args.plot
-
+print("Reading FM signal @ ", carrier_freq)
 # DEVICE SETTINGS
 sdr = RtlSdr()
 sdr.sample_rate = Fs # Hz
@@ -104,36 +104,45 @@ start = time.time()
 samples = sdr.read_samples(N)
 end = time.time()
 print("Reading time: ", end - start)
-
-plot_psd(samples, Fs, "RLTSDR Samples (PSD)", figure=1, subplot=1)
+if args.plot:
+	plot_psd(samples, Fs, "RLTSDR Samples (PSD)", figure=1, subplot=1)
 
 # DE_OFFSET
 # To mix the data down, generate a digital complex exponential
 # (with the same length as x1) with phase -F_offset/Fs
+start = time.time()
 carrier_freq1 = np.exp(-1.0j*2.0*np.pi* F_offset/Fs*np.arange(len(samples)))
 # Now, just multiply x1 and the digital complex expontential
 samples2 = samples * carrier_freq1
-plot_psd(samples2, Fs, "",figure=1, subplot=2)
+end = time.time()
+print("DE_OFFSET time: ", end - start)
+if args.plot:
+	plot_psd(samples2, Fs, "",figure=1, subplot=2)
 
 #DOWNSAMPLE AND CHANNEL SELECTION FILTER
 start = time.time()
-filtered = np_convolve(b, samples2)
+filtered = np_convolve(bd, samples2)
 decimated = filtered[0::downsample_rate]
 end = time.time()
 print("DOWNSAMPLE AND CHANNEL SELECTION FILTER time: ", end - start)
-plot_psd(decimated, Fs_downed, "FM signal (PSD)",figure=2, subplot=1)
+if args.plot:
+	plot_psd(decimated, Fs_downed, "FM signal (PSD)",figure=2, subplot=1)
 
 #FM DEMODULATION
 start = time.time()
-v = [0] * len(decimated)
-prev_s = 0
-for i, s in enumerate(decimated):
-    w = s * conj(prev_s)
-    v[i] = np.arctan2(w.imag, w.real)
-    prev_s = s
+# v = [0] * len(decimated)
+# prev_s = 0
+# for i, s in enumerate(decimated):
+#     w = s * conj(prev_s)
+#     v[i] = np.arctan2(w.imag, w.real)
+#     prev_s = s
+conjdecimated = np.insert(conj(decimated), 0, 0)
+w = decimated * conjdecimated[:-1]
+v = np.arctan2(w.imag, w.real)
 end = time.time()
 print("DEMODULATION time: ", end - start)
-plot_psd(v, Fs_downed, "",figure=2, subplot=2)
+if args.plot:
+	plot_psd(v, Fs_downed, "",figure=2, subplot=2)
 
 
 
